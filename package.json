@@ -1,6 +1,6 @@
 {
   "name": "@jonathanhunsucker/audio-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Higher-order Web Audio API nodes",
   "main": "src/index.js",
   "scripts": {

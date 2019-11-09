@@ -123,7 +123,7 @@ class Gain {
     return {
       kind: Gain.kind,
       level: this.level,
-      upstreams: this.upstreams,
+      upstreams: this.upstreams.map((upstream) => upstream.toJSON()),
     };
   }
 }
@@ -175,7 +175,7 @@ class Envelope {
       decay: this.options.decay,
       sustain: this.options.sustain,
       release: this.options.release,
-      upstreams: this.upstreams,
+      upstreams: this.upstreams.map((upstream) => upstream.toJSON()),
     };
   }
 }
