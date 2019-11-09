@@ -166,7 +166,12 @@ class Envelope {
     return node;
   }
   release(node) {
-    node.gain.linearRampToValueAtTime(0, node.context.currentTime + this.options.release);
+    const now = node.context.currentTime;
+    const valueBefore = node.gain.value;
+    node.gain.cancelScheduledValues(now);
+
+    node.gain.setValueAtTime(valueBefore, now);
+    node.gain.linearRampToValueAtTime(0, now + this.options.release);
   }
   toJSON() {
     return {
