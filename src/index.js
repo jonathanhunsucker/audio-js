@@ -132,10 +132,10 @@ Gain.kind = "gain";
 class Envelope {
   constructor(options, upstreams) {
     this.options = {
-      attack: options.attack || 0.01,
-      decay: options.decay || 0.2,
-      sustain: options.sustain || 0.1,
-      release: options.release || 0.5,
+      attack: options.attack,
+      decay: options.decay,
+      sustain: options.sustain,
+      release: options.release,
     };
 
     this.upstreams = upstreams;
