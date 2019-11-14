@@ -28,7 +28,7 @@ function silentPingToWakeAutoPlayGates(audioContext) {
 }
 
 function stageFactory(stageObject) {
-  const registry = [Wave, Envelope, Gain, Filter].reduce((reduction, stage) => {
+  const registry = [Wave, Envelope, Gain, Filter, Noise].reduce((reduction, stage) => {
     reduction[stage.kind] = stage;
     return reduction;
   }, {});
@@ -236,6 +236,41 @@ class Filter {
 }
 Filter.kind = "filter";
 
+class Noise {
+  static parse() {
+    return new Noise();
+  }
+  bind(frequency) {
+    return new Binding(
+      this,
+      null,
+      []
+    );
+  }
+  press(audioContext, frequency) {
+    const now = audioContext.currentTime;
+
+    const size = 2 * audioContext.sampleRate;
+    const buffer = audioContext.createBuffer(1, size, audioContext.sampleRate);
+    const output = buffer.getChannelData(0);
+    output.forEach((sample, i) => output[i] = Math.random() * 2 - 1);
+    const noise = audioContext.createBufferSource();
+    noise.buffer = buffer;
+    noise.loop = true;
+    noise.start(now);
+
+    return noise;
+  }
+  release(noise) {
+  }
+  toJSON() {
+    return {
+      kind: Noise.kind,
+    };
+  }
+}
+Noise.kind = "noise";
+
 module.exports = {
   silentPingToWakeAutoPlayGates: silentPingToWakeAutoPlayGates,
   stageFactory: stageFactory,
@@ -243,5 +278,6 @@ module.exports = {
   Wave: Wave,
   Gain: Gain,
   Envelope: Envelope,
+  Noise: Noise,
   Filter: Filter,
 };
