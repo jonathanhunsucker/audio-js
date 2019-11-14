@@ -28,7 +28,7 @@ function silentPingToWakeAutoPlayGates(audioContext) {
 }
 
 function stageFactory(stageObject) {
-  const registry = [Wave, Envelope, Gain].reduce((reduction, stage) => {
+  const registry = [Wave, Envelope, Gain, Filter].reduce((reduction, stage) => {
     reduction[stage.kind] = stage;
     return reduction;
   }, {});
@@ -186,6 +186,56 @@ class Envelope {
 }
 Envelope.kind = "envelope";
 
+class Filter {
+  constructor(type, frequency, q, gain, upstreams) {
+    this.type = type;
+    this.frequency = frequency;
+    this.q = q;
+    this.gain = gain;
+    this.upstreams = upstreams;
+  }
+  static parse(object) {
+    return new Filter(
+      object.type,
+      object.frequency,
+      object.q,
+      object.gain,
+      object.upstreams.map(stageFactory)
+    );
+  }
+  bind(frequency) {
+    return new Binding(
+      this,
+      frequency,
+      this.upstreams.map((stage) => stage.bind(frequency))
+    );
+  }
+  press(audioContext, frequency) {
+    const now = audioContext.currentTime;
+
+    const filter = audioContext.createBiquadFilter();
+    filter.type = this.type;
+    filter.frequency.setValueAtTime(this.frequency, now);
+    filter.Q.setValueAtTime(this.q, now);
+    filter.gain.setValueAtTime(this.gain, now);
+
+    return filter;
+  }
+  release(filter) {
+  }
+  toJSON() {
+    return {
+      kind: Filter.kind,
+      type: this.type,
+      frequency: this.frequency,
+      q: this.q,
+      gain: this.gain,
+      upstreams: this.upstreams.map((upstream) => upstream.toJSON()),
+    };
+  }
+}
+Filter.kind = "filter";
+
 module.exports = {
   silentPingToWakeAutoPlayGates: silentPingToWakeAutoPlayGates,
   stageFactory: stageFactory,
@@ -193,4 +243,5 @@ module.exports = {
   Wave: Wave,
   Gain: Gain,
   Envelope: Envelope,
+  Filter: Filter,
 };
