@@ -56,19 +56,23 @@ class Binding {
     return node;
   }
   release() {
+    const stopsAt = this.internalReleaseAndCalculateMaxStopsAt();
+    this.stop(stopsAt);
+  }
+  /**
+   * @private
+   */
+  internalReleaseAndCalculateMaxStopsAt() {
     const stopsAt = this.stage.release(this.node);
-    const bindingStopsAts = this.bindings.map((binding) => binding.release());
+    const bindingStopsAts = this.bindings.map((binding) => binding.internalReleaseAndCalculateMaxStopsAt());
     const maxStopsAt = bindingStopsAts.reduce((maxStopsAt, bindingStopsAt) => Math.max(maxStopsAt, bindingStopsAt), stopsAt);
-    this.stop(maxStopsAt);
     return maxStopsAt;
   }
+  /**
+   * @private
+   */
   stop(at) {
-    try {
-      // there seemsn't to be a way to ascertain whether a node is stop-able with 100% guarantee that stop()
-      // itself won't throw, so give up and call it and swallow the exception
-      this.node.stop(at);
-    } catch (e) {
-    }
+    this.node.stop && this.node.stop(at);
     this.bindings.forEach((binding) => binding.stop(at));
   }
 }
