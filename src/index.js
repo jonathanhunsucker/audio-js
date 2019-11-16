@@ -24,7 +24,7 @@ function silentPingToWakeAutoPlayGates(audioContext) {
   );
 
   binding.play(audioContext, audioContext.destination);
-  binding.stop();
+  binding.release();
 }
 
 function stageFactory(stageObject) {
@@ -55,9 +55,21 @@ class Binding {
     this.bindings.forEach((binding) => binding.play(audioContext, node).connect(node));
     return node;
   }
-  stop() {
-    this.stage.release(this.node);
-    this.bindings.map((binding) => binding.stop());
+  release() {
+    const stopsAt = this.stage.release(this.node);
+    const bindingStopsAts = this.bindings.map((binding) => binding.release());
+    const maxStopsAt = bindingStopsAts.reduce((maxStopsAt, bindingStopsAt) => Math.max(maxStopsAt, bindingStopsAt), stopsAt);
+    this.stop(maxStopsAt);
+    return maxStopsAt;
+  }
+  stop(at) {
+    try {
+      // there seemsn't to be a way to ascertain whether a node is stop-able with 100% guarantee that stop()
+      // itself won't throw, so give up and call it and swallow the exception
+      this.node.stop(at);
+    } catch (e) {
+    }
+    this.bindings.forEach((binding) => binding.stop(at));
   }
 }
 
@@ -85,7 +97,7 @@ class Wave {
     return wave;
   }
   release(node) {
-    node.stop(node.context.currentTime + 1.0);
+    return node.context.currentTime;
   }
   toJSON() {
     return {
@@ -118,6 +130,7 @@ class Gain {
     return gain;
   }
   release(node) {
+    return node.context.currentTime;
   }
   toJSON() {
     return {
@@ -172,6 +185,8 @@ class Envelope {
 
     node.gain.setValueAtTime(valueBefore, now);
     node.gain.linearRampToValueAtTime(0, now + this.options.release);
+
+    return now + this.options.release;
   }
   toJSON() {
     return {
@@ -222,6 +237,7 @@ class Filter {
     return filter;
   }
   release(filter) {
+    return filter.context.currentTime;
   }
   toJSON() {
     return {
@@ -262,6 +278,7 @@ class Noise {
     return noise;
   }
   release(noise) {
+    return node.context.currentTime;
   }
   toJSON() {
     return {
