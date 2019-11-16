@@ -278,7 +278,7 @@ class Noise {
     return noise;
   }
   release(noise) {
-    return node.context.currentTime;
+    return noise.context.currentTime;
   }
   toJSON() {
     return {
