@@ -23,7 +23,7 @@ function silentPingToWakeAutoPlayGates(audioContext) {
     ]
   );
 
-  binding.play(audioContext, audioContext.destination);
+  binding.play(audioContext, audioContext.destination, audioContext.currentTime);
   binding.release();
 }
 
@@ -48,11 +48,11 @@ class Binding {
   /*
    * Actually builds nodes, then starts and connects
    */
-  play(audioContext, destination) {
-    const node = this.stage.press(audioContext, this.frequency);
+  play(audioContext, destination, at) {
+    const node = this.stage.press(audioContext, at, this.frequency);
     node.connect(destination);
     this.node = node;
-    this.bindings.forEach((binding) => binding.play(audioContext, node).connect(node));
+    this.bindings.forEach((binding) => binding.play(audioContext, node, at).connect(node));
     return node;
   }
   release() {
@@ -91,12 +91,12 @@ class Wave {
       []
     );
   }
-  press(audioContext, frequency) {
+  press(audioContext, at, frequency) {
     const wave = audioContext.createOscillator();
 
     wave.type = this.type;
     wave.frequency.value = frequency;
-    wave.start(wave.context.currentTime);
+    wave.start(at);
 
     return wave;
   }
@@ -127,7 +127,7 @@ class Gain {
       this.upstreams.map((stage) => stage.bind(frequency))
     );
   }
-  press(audioContext) {
+  press(audioContext, at) {
     const gain = audioContext.createGain();
     gain.gain.value = this.level;
 
@@ -172,13 +172,12 @@ class Envelope {
       this.upstreams.map((stage) => stage.bind(frequency))
     );
   }
-  press(audioContext, frequency) {
+  press(audioContext, at, frequency) {
     const node = audioContext.createGain();
-    const now = node.context.currentTime;
 
-    node.gain.setValueAtTime(0.0, now + 0.0); // initialize to 0
-    node.gain.linearRampToValueAtTime(1.0, now + this.options.attack); // attack
-    node.gain.linearRampToValueAtTime(this.options.sustain, now + this.options.attack + this.options.decay); // decay to sustain
+    node.gain.setValueAtTime(0.0, at + 0.0); // initialize to 0
+    node.gain.linearRampToValueAtTime(1.0, at + this.options.attack); // attack
+    node.gain.linearRampToValueAtTime(this.options.sustain, at + this.options.attack + this.options.decay); // decay to sustain
 
     return node;
   }
@@ -229,14 +228,12 @@ class Filter {
       this.upstreams.map((stage) => stage.bind(frequency))
     );
   }
-  press(audioContext, frequency) {
-    const now = audioContext.currentTime;
-
+  press(audioContext, at, frequency) {
     const filter = audioContext.createBiquadFilter();
     filter.type = this.type;
-    filter.frequency.setValueAtTime(this.frequency, now);
-    filter.Q.setValueAtTime(this.q, now);
-    filter.gain.setValueAtTime(this.gain, now);
+    filter.frequency.setValueAtTime(this.frequency, at);
+    filter.Q.setValueAtTime(this.q, at);
+    filter.gain.setValueAtTime(this.gain, at);
 
     return filter;
   }
@@ -267,9 +264,7 @@ class Noise {
       []
     );
   }
-  press(audioContext, frequency) {
-    const now = audioContext.currentTime;
-
+  press(audioContext, at, frequency) {
     const size = 2 * audioContext.sampleRate;
     const buffer = audioContext.createBuffer(1, size, audioContext.sampleRate);
     const output = buffer.getChannelData(0);
@@ -277,7 +272,7 @@ class Noise {
     const noise = audioContext.createBufferSource();
     noise.buffer = buffer;
     noise.loop = true;
-    noise.start(now);
+    noise.start(at);
 
     return noise;
   }
