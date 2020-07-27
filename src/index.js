@@ -290,12 +290,16 @@ Noise.kind = "noise";
 class Sample {
   /**
    * @param {Float32Array[]} data Array of Float32Arrays, one per channel
+   * @param {Number} beginAt
+   * @param {Number} endAt
    */
-  constructor(data) {
+  constructor(data, beginAt, endAt) {
     this.data = data;
+    this.beginAt = beginAt;
+    this.endAt = endAt;
   }
   static parse(object) {
-    return new Sample(object.data);
+    return new Sample(object.data, object.beginAt || 0, object.endAt || object.data[0].length);
   }
   bind(frequency) {
     return new Binding(
@@ -312,7 +316,7 @@ class Sample {
     const buffer = audioContext.createBuffer(this.data.length, countFrames, 44100);
 
     this.data.forEach((channelData, index) => {
-      for (let i = 0; i < channelData.length; i++) {
+      for (let i = this.beginAt; i < this.endAt; i++) {
         buffer.getChannelData(index)[i] = channelData[i]
       }
     })
@@ -335,6 +339,8 @@ class Sample {
     return {
       kind: "sample",
       data: this.data,
+      beginAt: this.beginAt,
+      endAt: this.endAt,
     };
   }
 }
