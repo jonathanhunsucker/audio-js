@@ -28,7 +28,7 @@ function silentPingToWakeAutoPlayGates(audioContext) {
 }
 
 function stageFactory(stageObject) {
-  const registry = [Wave, Envelope, Gain, Filter, Noise].reduce((reduction, stage) => {
+  const registry = [Wave, Envelope, Gain, Filter, Noise, Sample].reduce((reduction, stage) => {
     reduction[stage.kind] = stage;
     return reduction;
   }, {});
@@ -287,6 +287,59 @@ class Noise {
 }
 Noise.kind = "noise";
 
+class Sample {
+  /**
+   * @param {Float32Array[]} data Array of Float32Arrays, one per channel
+   */
+  constructor(data) {
+    this.data = data;
+  }
+  static parse(object) {
+    return new Sample(object.data);
+  }
+  bind(frequency) {
+    return new Binding(
+      this,
+      null,
+      []
+    );
+  }
+  dataLengthInFrames() {
+    return Math.max(...this.data.map((array) => array.length))
+  }
+  createBufferContainingData(audioContext) {
+    const countFrames = this.dataLengthInFrames();
+    const buffer = audioContext.createBuffer(this.data.length, countFrames, 44100);
+
+    this.data.forEach((channelData, index) => {
+      for (let i = 0; i < channelData.length; i++) {
+        buffer.getChannelData(index)[i] = channelData[i]
+      }
+    })
+
+    return buffer
+  }
+  press(audioContext, at, frequency) {
+    const buffer = this.createBufferContainingData(audioContext);
+
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.start(at);
+
+    return source;
+  }
+  release(sample) {
+    return sample.context.currentTime;
+  }
+  toJSON() {
+    return {
+      kind: "sample",
+      data: this.data,
+    };
+  }
+}
+Sample.kind = "sample";
+
 module.exports = {
   silentPingToWakeAutoPlayGates: silentPingToWakeAutoPlayGates,
   stageFactory: stageFactory,
@@ -296,4 +349,5 @@ module.exports = {
   Envelope: Envelope,
   Noise: Noise,
   Filter: Filter,
+  Sample: Sample,
 };
